@@ -116,15 +116,17 @@ export class Payment {
     switch (this.paymentType) {
       case "card":
         console.log("[종료] 카드 결제가 종료되었어요.\n")
+        this.paymentType = '';
         break;
       case "money":
         console.log(
             `[종료] 잔액 ${this.userMoneyBalance.toLocaleString()}원을 반환합니다.`)
         this.calculateChanges();
         this.userMoneyBalance = 0;
+        this.paymentType = '';
         break;
       default:
-        throw new Error(`"${this.paymentType}"은 등록되지 않은 결제방식이에요. 다시 시도해주세요.`)
+        console.error(`"${this.paymentType}"은 등록되지 않은 결제방식이에요. 다시 시도해주세요.`)
     }
   }
 

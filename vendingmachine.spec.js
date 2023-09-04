@@ -9,7 +9,7 @@ describe('자판기 테스트', function () {
   beforeAll(() => {
     vm1954 = new VendingMachine();
     vm1954.stock.initItem({itemName: COKE, itemPrice: 1100, itemCount: 5});
-    vm1954.stock.initItem({itemName: WATER, itemPrice: 600, itemCount: 4});
+    vm1954.stock.initItem({itemName: WATER, itemPrice: 600, itemCount: 5});
     vm1954.stock.initItem({itemName: COFFEE, itemPrice: 700, itemCount: 3});
     vm1954.payment.initMoney(
         [[100, 500], [500, 400], [1000, 300], [5000, 100], [10000, 5]]);
@@ -54,7 +54,7 @@ describe('자판기 테스트', function () {
     expect(vm1954.payment.getUserMoneyBalance()).toBe(10000);
     expect(vm1954.payment.getMachineMoneyBalance().get(10000)).toBe(6);
     vm1954.purchaseItemBy(user, WATER);
-    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(3);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(4);
     expect(vm1954.payment.getUserMoneyBalance()).toBe(9400);
     vm1954.endUserTransaction();
 
@@ -96,9 +96,9 @@ describe('자판기 테스트', function () {
     expect(vm1954.stock.getStock().get(COFFEE).itemCount).toBe(0);
     vm1954.purchaseItemBy(user, COFFEE);
     expect(vm1954.stock.getStock().get(COFFEE).itemCount).toBe(0);
-    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(3);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(4);
     vm1954.purchaseItemBy(user, WATER);
-    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(2);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(3);
     vm1954.endUserTransaction();
 
     expect(vm1954.payment.getMachineMoneyBalance().get(1000)).toBe(290);
@@ -114,10 +114,10 @@ describe('자판기 테스트', function () {
     expect(vm1954.payment.getMachineMoneyBalance().get(1000)).toBe(291);
     vm1954.purchaseItemBy(user, WATER);
     expect(vm1954.payment.getUserMoneyBalance()).toBe(400);
-    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(2);
     vm1954.purchaseItemBy(user, WATER);
     expect(vm1954.payment.getUserMoneyBalance()).toBe(400);
-    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(2);
     vm1954.endUserTransaction();
 
     expect(vm1954.payment.getMachineMoneyBalance().get(100)).toBe(490);
@@ -195,5 +195,43 @@ describe('자판기 테스트', function () {
     vm1954.endUserTransaction();
 
     expect(vm1954.getPurchaseHistory().length).toBe(11);
+  })
+
+  test('물을 2개 사려고 했으나, 1개 사고나서 카드 밸런스가 없어서 살 수 없는 케이스', () => {
+    vm1954.payment.setCardAsPayType();
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(2);
+    vm1954.purchaseItemBy(user, WATER);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.payment.checkCardBalance = (User, amount) => false;
+    vm1954.purchaseItemBy(user, WATER);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.endUserTransaction();
+  })
+
+  test('처음부터 카드 밸런스가 존재하지 않아, 구매를 진행할 수 없는 케이스', () => {
+    vm1954.payment.setCardAsPayType();
+    vm1954.payment.checkCardBalance = (User, amount) => false;
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.purchaseItemBy(user, WATER);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.endUserTransaction();
+
+    // 복구
+    vm1954.payment.checkCardBalance = (User, amount) => true;
+  })
+
+  test('카드에 밸런스는 존재하며, 커피를 사려고 했으나 재고가 없어서 구매를 진행할 수 없는 케이스', () => {
+    vm1954.payment.setCardAsPayType();
+    expect(vm1954.stock.getStock().get(COFFEE).itemCount).toBe(0);
+    vm1954.purchaseItemBy(user, COFFEE);
+    expect(vm1954.stock.getStock().get(COFFEE).itemCount).toBe(0);
+    vm1954.endUserTransaction();
+  })
+
+  test('유효하지 않은 결제 방식을 선택한 경우 진행 불가', () => {
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.purchaseItemBy(user, WATER);
+    expect(vm1954.stock.getStock().get(WATER).itemCount).toBe(1);
+    vm1954.endUserTransaction();
   })
 });
